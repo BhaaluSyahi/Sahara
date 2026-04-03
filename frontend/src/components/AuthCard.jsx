@@ -38,11 +38,13 @@ function AuthCard() {
 
         <AuthTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {activeTab === 'login' ? (
-          <LoginForm onForgotPassword={() => setIsForgotPasswordOpen(true)} />
-        ) : (
-          <SignUpForm />
-        )}
+        <div key={activeTab} className="auth-card__form-transition">
+          {activeTab === 'login' ? (
+            <LoginForm onForgotPassword={() => setIsForgotPasswordOpen(true)} />
+          ) : (
+            <SignUpForm />
+          )}
+        </div>
 
         <div className="auth-card__divider">
           <hr className="auth-card__divider-line" />

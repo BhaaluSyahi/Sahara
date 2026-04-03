@@ -97,3 +97,19 @@
     padding: 1.5rem 1rem;
   }
 }
+
+/* Form transition animation */
+@keyframes formFadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-card__form-transition {
+  animation: formFadeSlideIn 0.25s ease forwards;
+}

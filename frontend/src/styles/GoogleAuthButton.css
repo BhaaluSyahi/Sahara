@@ -1,0 +1,13 @@
+/* GoogleAuthButton styles */
+
+.google-auth-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.google-auth-button > div {
+  width: 100%;
+}

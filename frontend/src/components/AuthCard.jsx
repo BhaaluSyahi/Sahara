@@ -31,7 +31,7 @@ function AuthCard() {
               fill="white"
             />
           </svg>
-          <h1 className="auth-card__heading">CivicWay</h1>
+          <h1 className="auth-card__heading">Sahara</h1>
         </div>
 
         <p className="auth-card__subtitle">Secure access to government services</p>

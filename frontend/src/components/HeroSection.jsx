@@ -4,7 +4,7 @@ function HeroSection() {
   return (
     <section className="hero">
       <div className="hero__left">
-        <span className="hero__badge">🌱 Now matching for Summer 2024</span>
+        <span className="hero__badge">🌱 Now matching for Summer 2026</span>
         <h1 className="hero__heading">
           Together, we{' '}
           <span className="hero__heading--green">cultivate</span>{' '}

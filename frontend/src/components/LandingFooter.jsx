@@ -11,7 +11,7 @@ function LandingFooter() {
         <a href="/partner">Partner with Us</a>
       </nav>
       <p className="landing-footer__copy">
-        © 2024 Sahara Volunteer Matching. Cultivating impact through connection.
+        © 2026 Sahara Volunteer Matching. Cultivating impact through connection.
       </p>
       <a href="/register" className="landing-footer__cta">+ Register Now</a>
     </footer>

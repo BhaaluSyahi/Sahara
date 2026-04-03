@@ -1,0 +1,47 @@
+.landing-page {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Fixed background image layer — src set via inline style in JSX */
+.landing-page__bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  z-index: 0;
+}
+
+/* Content sits above the bg */
+.landing-page__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Make all section backgrounds semi-transparent so bg shows through */
+.landing-page__content .hero {
+  background: rgba(247, 250, 247, 0.88);
+}
+
+.landing-page__content .stats {
+  background: rgba(238, 244, 238, 0.9);
+}
+
+.landing-page__content .opps {
+  background: rgba(247, 250, 247, 0.9);
+}
+
+.landing-page__content .auth-section {
+  background: rgba(238, 244, 238, 0.9);
+}
+
+.landing-page__content .landing-footer {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.landing-page__content .navbar {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}

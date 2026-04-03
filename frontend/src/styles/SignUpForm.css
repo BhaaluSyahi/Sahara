@@ -1,7 +1,30 @@
+/* SignUpForm scroll wrapper — constrains height and enables internal scroll */
+.signup-form__scroll-wrapper {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 6px;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #a5d6a7 transparent;
+}
+
+.signup-form__scroll-wrapper::-webkit-scrollbar {
+  width: 5px;
+}
+
+.signup-form__scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.signup-form__scroll-wrapper::-webkit-scrollbar-thumb {
+  background-color: #a5d6a7;
+  border-radius: 10px;
+}
+
 .signup-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
@@ -17,23 +40,39 @@
   color: #333;
 }
 
-.signup-form__input {
+.signup-form__input,
+.signup-form__select {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 6px;
   outline: none;
+  background-color: #fff;
   transition: border-color 0.2s;
+  min-height: 44px;
+  color: #333;
 }
 
-.signup-form__input:focus {
+.signup-form__input:focus,
+.signup-form__select:focus {
   border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.12);
+}
+
+.signup-form__input--error {
+  border-color: #d32f2f;
+}
+
+.signup-form__select:disabled {
+  background-color: #f5f5f5;
+  color: #aaa;
+  cursor: not-allowed;
 }
 
 .signup-form__error {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #d32f2f;
   margin-top: 2px;
 }
@@ -46,10 +85,11 @@
   color: #fff;
   background-color: #2e7d32;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 4px;
+  margin-top: 6px;
+  min-height: 44px;
 }
 
 .signup-form__submit:hover {

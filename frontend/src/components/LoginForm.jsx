@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PasswordField from './PasswordField';
+import useAuthStore from '../store/useAuthStore';
 import '../styles/LoginForm.css';
 
 // ─── API Config ───────────────────────────────────────────────────────────────
@@ -42,6 +44,8 @@ function LoginForm({ onForgotPassword }) {
   const [errors, setErrors] = useState({ usernameOrEmail: '', password: '' });
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,9 +61,8 @@ function LoginForm({ onForgotPassword }) {
     setLoading(true);
     try {
       const data = await loginUser(usernameOrEmail, password);
-      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
-      console.log('Login success:', data);
-      // TODO: navigate to dashboard after login
+      login(data.user, data.token); // store user + token in Zustand + localStorage
+      navigate('/dashboard');
     } catch (err) {
       setApiError(err.message);
     } finally {

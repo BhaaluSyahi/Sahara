@@ -5,6 +5,7 @@ import LoginForm, { loginWithGoogle } from './LoginForm';
 import SignUpForm from './SignUpForm';
 import GoogleAuthButton from './GoogleAuthButton';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import useAuthStore from '../store/useAuthStore';
 import '../styles/AuthCard.css';
 
 function AuthCard() {
@@ -12,13 +13,13 @@ function AuthCard() {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [googleError, setGoogleError] = useState('');
   const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setGoogleError('');
     try {
       const data = await loginWithGoogle(credentialResponse);
-      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
-      console.log('Google login success:', data);
+      login(data.user, data.token);
       navigate('/dashboard');
     } catch (err) {
       setGoogleError(err.message);

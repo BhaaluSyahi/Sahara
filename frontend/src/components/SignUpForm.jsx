@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { State, City } from 'country-state-city';
 import PasswordField from './PasswordField';
+import useAuthStore from '../store/useAuthStore';
 import '../styles/SignUpForm.css';
 
 // ─── API Config ───────────────────────────────────────────────────────────────
@@ -33,6 +35,8 @@ function SignUpForm() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
 
   const indianStates = useMemo(
     () => State.getStatesOfCountry('IN').sort((a, b) => a.name.localeCompare(b.name)),
@@ -76,9 +80,8 @@ function SignUpForm() {
     setLoading(true);
     try {
       const data = await registerUser({ name, email, password, state: selectedState, city: selectedCity });
-      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
-      console.log('Registration success:', data);
-      // TODO: navigate to dashboard after registration
+      login(data.user, data.token); // store user + token in Zustand + localStorage
+      navigate('/dashboard');
     } catch (err) {
       setApiError(err.message);
     } finally {

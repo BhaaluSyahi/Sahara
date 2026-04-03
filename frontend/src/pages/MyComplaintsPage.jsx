@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import LandingFooter from '../components/LandingFooter';
 import useFadeInOnScroll from '../hooks/useFadeInOnScroll';
 import bgImage from '../assets/wmremove-transformed.png';
+import { getToken } from '../store/useAuthStore';
 import '../styles/MyComplaintsPage.css';
 
 function FadeSection({ children, delay = 0 }) {
@@ -18,7 +19,8 @@ function FadeSection({ children, delay = 0 }) {
   );
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Mock Data (commented out) ────────────────────────────────────────────────
+/*
 const mockComplaints = [
   {
     id: 'SAH-8821',
@@ -45,23 +47,23 @@ const mockComplaints = [
     zone: 'Zone C - Recreational Hub',
   },
 ];
+*/
 
-// ─── API Config (commented out — uncomment when backend is ready) ─────────────
-/*
+// ─── API Config ───────────────────────────────────────────────────────────────
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
 async function fetchMyComplaints(filters = {}) {
   const params = new URLSearchParams(filters).toString();
+  const token = getToken();
   const res = await fetch(`${API_BASE_URL}/my-complaints?${params}`, {
     headers: {
       'Content-Type': 'application/json',
-      // Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
   if (!res.ok) throw new Error(`Failed to fetch complaints (${res.status})`);
   return res.json();
 }
-*/
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_STYLES = {
@@ -113,21 +115,13 @@ function MyComplaintsPage() {
   const loadComplaints = () => {
     setLoading(true);
     setError(null);
-    // ── Using mock data (swap with fetchMyComplaints when backend is ready) ──
-    setTimeout(() => {
-      try {
-        let filtered = [...mockComplaints];
-        if (search) filtered = filtered.filter(c =>
-          c.title.toLowerCase().includes(search.toLowerCase()) || c.id.includes(search)
-        );
-        if (statusFilter) filtered = filtered.filter(c => c.status === statusFilter);
-        setComplaints(filtered);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    }, 400); // simulate network delay
+    const filters = {};
+    if (search) filters.search = search;
+    if (statusFilter) filters.status = statusFilter;
+    fetchMyComplaints(filters)
+      .then(setComplaints)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadComplaints(); }, []); // eslint-disable-line

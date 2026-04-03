@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import useFadeInOnScroll from '../hooks/useFadeInOnScroll';
 import bgImage from '../assets/wmremove-transformed.png';
+import { getToken } from '../store/useAuthStore';
 import '../styles/DashboardPage.css';
 
 // ─── Mock Data (commented out — replace with API calls below) ────────────────
@@ -26,10 +27,11 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 // ─── API Calls (wire these to your backend) ───────────────────────────────────
 async function fetchComplaints() {
   // TODO: replace with your actual endpoint
+  const token = getToken();
   const res = await fetch(`${API_BASE_URL}/complaints`, {
     headers: {
       'Content-Type': 'application/json',
-      // Authorization: `Bearer ${token}`,  // uncomment when auth is wired
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
   if (!res.ok) throw new Error(`Failed to fetch complaints (${res.status})`);

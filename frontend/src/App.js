@@ -4,10 +4,12 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MyComplaintsPage from './pages/MyComplaintsPage';
+import CustomCursor from './components/CustomCursor';
 
 function App() {
   return (
     <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+      <CustomCursor />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />

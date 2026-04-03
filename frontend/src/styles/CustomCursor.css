@@ -1,0 +1,21 @@
+.custom-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  /* Offset so the SVG appears to the right of the arrow tip, like it's being carried */
+  transform: translate(12px, -20px);
+  transition: opacity 0.2s ease;
+  opacity: 0.82;
+}
+
+.custom-cursor--hidden {
+  opacity: 0;
+}
+
+.custom-cursor--clicked {
+  transform: translate(10px, -24px) scale(1.2);
+  transition: transform 0.12s ease;
+  opacity: 1;
+}
+
+/* Default cursor is kept — no cursor: none */

@@ -8,10 +8,14 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "country-state-city": "^3.2.1",
+    "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-scripts": "5.0.1",
+    "tailwind-merge": "^3.5.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -39,6 +43,9 @@
     ]
   },
   "devDependencies": {
-    "fast-check": "^4.6.0"
+    "autoprefixer": "^10.4.27",
+    "fast-check": "^4.6.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19"
   }
 }

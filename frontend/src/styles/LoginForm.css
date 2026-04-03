@@ -75,3 +75,18 @@
 .login-form__submit:hover {
   background-color: #1b5e20;
 }
+
+.login-form__api-error {
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  color: #d32f2f;
+  font-size: 0.82rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.login-form__submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

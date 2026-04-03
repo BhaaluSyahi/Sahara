@@ -3,6 +3,26 @@ import { State, City } from 'country-state-city';
 import PasswordField from './PasswordField';
 import '../styles/SignUpForm.css';
 
+// ─── API Config ───────────────────────────────────────────────────────────────
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+
+// ─── API Call (wire to your backend) ─────────────────────────────────────────
+async function registerUser(payload) {
+  // TODO: replace with your actual registration endpoint
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    // payload shape: { name, email, password, state, city }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Registration failed (${res.status})`);
+  }
+  return res.json(); // expected: { token, user }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 function SignUpForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -11,14 +31,14 @@ function SignUpForm() {
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // All Indian states
   const indianStates = useMemo(
     () => State.getStatesOfCountry('IN').sort((a, b) => a.name.localeCompare(b.name)),
     []
   );
 
-  // Cities for the selected state
   const cities = useMemo(() => {
     if (!selectedState) return [];
     return City.getCitiesOfState('IN', selectedState).sort((a, b) =>
@@ -46,18 +66,30 @@ function SignUpForm() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
     const newErrors = validate();
     setErrors(newErrors);
-    if (Object.keys(newErrors).length === 0) {
-      console.log({ name, email, password, state: selectedState, city: selectedCity });
+    if (Object.keys(newErrors).length > 0) return;
+
+    setLoading(true);
+    try {
+      const data = await registerUser({ name, email, password, state: selectedState, city: selectedCity });
+      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
+      console.log('Registration success:', data);
+      // TODO: navigate to dashboard after registration
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="signup-form__scroll-wrapper">
       <form className="signup-form" onSubmit={handleSubmit} noValidate>
+        {apiError && <div className="signup-form__api-error">{apiError}</div>}
 
         <div className="signup-form__field">
           <label htmlFor="signup-name" className="signup-form__label">Name</label>
@@ -117,9 +149,7 @@ function SignUpForm() {
           >
             <option value="">Select your state</option>
             {indianStates.map((state) => (
-              <option key={state.isoCode} value={state.isoCode}>
-                {state.name}
-              </option>
+              <option key={state.isoCode} value={state.isoCode}>{state.name}</option>
             ))}
           </select>
           {errors.state && <span className="signup-form__error">{errors.state}</span>}
@@ -134,22 +164,17 @@ function SignUpForm() {
             onChange={(e) => setSelectedCity(e.target.value)}
             disabled={!selectedState}
           >
-            <option value="">
-              {selectedState ? 'Select your city' : 'Select a state first'}
-            </option>
+            <option value="">{selectedState ? 'Select your city' : 'Select a state first'}</option>
             {cities.map((city) => (
-              <option key={city.name} value={city.name}>
-                {city.name}
-              </option>
+              <option key={city.name} value={city.name}>{city.name}</option>
             ))}
           </select>
           {errors.city && <span className="signup-form__error">{errors.city}</span>}
         </div>
 
-        <button type="submit" className="signup-form__submit">
-          Create Account
+        <button type="submit" className="signup-form__submit" disabled={loading}>
+          {loading ? 'Creating account...' : 'Create Account'}
         </button>
-
       </form>
     </div>
   );

@@ -2,27 +2,75 @@ import { useState } from 'react';
 import PasswordField from './PasswordField';
 import '../styles/LoginForm.css';
 
+// ─── API Config ───────────────────────────────────────────────────────────────
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+
+// ─── API Call (wire to your backend) ─────────────────────────────────────────
+async function loginUser(usernameOrEmail, password) {
+  // TODO: replace with your actual login endpoint
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usernameOrEmail, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Login failed (${res.status})`);
+  }
+  return res.json(); // expected: { token, user }
+}
+
+// ─── Google OAuth handler (wire to your backend) ──────────────────────────────
+async function loginWithGoogle(credentialResponse) {
+  // TODO: send Google credential to your backend for verification
+  const res = await fetch(`${API_BASE_URL}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential: credentialResponse.credential }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Google login failed (${res.status})`);
+  }
+  return res.json(); // expected: { token, user }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 function LoginForm({ onForgotPassword }) {
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({ usernameOrEmail: '', password: '' });
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
+
     const newErrors = {
       usernameOrEmail: usernameOrEmail.trim() ? '' : 'Username or email is required',
       password: password.trim() ? '' : 'Password is required',
     };
     setErrors(newErrors);
+    if (newErrors.usernameOrEmail || newErrors.password) return;
 
-    if (!newErrors.usernameOrEmail && !newErrors.password) {
-      // no-op submit handler
-      console.log({ usernameOrEmail, password });
+    setLoading(true);
+    try {
+      const data = await loginUser(usernameOrEmail, password);
+      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
+      console.log('Login success:', data);
+      // TODO: navigate to dashboard after login
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form className="login-form" onSubmit={handleSubmit} noValidate>
+      {apiError && <div className="login-form__api-error">{apiError}</div>}
+
       <div className="login-form__field">
         <label htmlFor="usernameOrEmail" className="login-form__label">
           Username or Email
@@ -50,21 +98,18 @@ function LoginForm({ onForgotPassword }) {
           <span className="login-form__error">{errors.password}</span>
         )}
         <div className="login-form__forgot-wrapper">
-          <button
-            type="button"
-            className="login-form__forgot"
-            onClick={onForgotPassword}
-          >
+          <button type="button" className="login-form__forgot" onClick={onForgotPassword}>
             Forgot Password?
           </button>
         </div>
       </div>
 
-      <button type="submit" className="login-form__submit">
-        Login to Portal
+      <button type="submit" className="login-form__submit" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login to Portal'}
       </button>
     </form>
   );
 }
 
+export { loginWithGoogle };
 export default LoginForm;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AuthTabs from './AuthTabs';
-import LoginForm from './LoginForm';
+import LoginForm, { loginWithGoogle } from './LoginForm';
 import SignUpForm from './SignUpForm';
 import GoogleAuthButton from './GoogleAuthButton';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -9,6 +10,20 @@ import '../styles/AuthCard.css';
 function AuthCard() {
   const [activeTab, setActiveTab] = useState('login');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+  const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleError('');
+    try {
+      const data = await loginWithGoogle(credentialResponse);
+      // TODO: store token via Zustand useAuthStore.getState().login(data.user)
+      console.log('Google login success:', data);
+      navigate('/dashboard');
+    } catch (err) {
+      setGoogleError(err.message);
+    }
+  };
 
   return (
     <div className="auth-card-panel">
@@ -53,9 +68,10 @@ function AuthCard() {
         </div>
 
         <GoogleAuthButton
-          onSuccess={(credentialResponse) => console.log('Google success', credentialResponse)}
-          onError={() => console.log('Google error')}
+          onSuccess={handleGoogleSuccess}
+          onError={() => setGoogleError('Google sign-in failed. Please try again.')}
         />
+        {googleError && <p className="auth-card__google-error">{googleError}</p>}
 
         <p className="auth-card__legal">
           By using this portal, you agree to our{' '}

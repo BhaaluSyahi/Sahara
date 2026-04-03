@@ -113,3 +113,10 @@
 .auth-card__form-transition {
   animation: formFadeSlideIn 0.25s ease forwards;
 }
+
+.auth-card__google-error {
+  font-size: 0.78rem;
+  color: #d32f2f;
+  text-align: center;
+  margin: 0.25rem 0 0;
+}

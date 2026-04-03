@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AuthTabs from './AuthTabs';
 import LoginForm, { loginWithGoogle } from './LoginForm';
 import SignUpForm from './SignUpForm';
@@ -13,7 +13,14 @@ function AuthCard() {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [googleError, setGoogleError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useAuthStore((state) => state.login);
+
+  // Open signup tab if ?tab=signup is in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'signup') setActiveTab('signup');
+  }, [location.search]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setGoogleError('');

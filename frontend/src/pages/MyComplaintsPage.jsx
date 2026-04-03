@@ -4,6 +4,7 @@ import LandingFooter from '../components/LandingFooter';
 import useFadeInOnScroll from '../hooks/useFadeInOnScroll';
 import bgImage from '../assets/wmremove-transformed.png';
 import { getToken } from '../store/useAuthStore';
+import PageLoader from '../components/PageLoader';
 import '../styles/MyComplaintsPage.css';
 
 function FadeSection({ children, delay = 0 }) {
@@ -128,6 +129,7 @@ function MyComplaintsPage() {
 
   return (
     <div className="mc-page">
+      <PageLoader visible={loading} />
       <div className="mc-page__bg" style={{ backgroundImage: `url(${bgImage})` }} />
       <div className="mc-page__content">
         <Navbar />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { State, City } from 'country-state-city';
 import PasswordField from './PasswordField';
 import useAuthStore from '../store/useAuthStore';
+import PageLoader from './PageLoader';
 import '../styles/SignUpForm.css';
 
 // ─── API Config ───────────────────────────────────────────────────────────────
@@ -90,7 +91,9 @@ function SignUpForm() {
   };
 
   return (
-    <div className="signup-form__scroll-wrapper">
+    <>
+      <PageLoader visible={loading} />
+      <div className="signup-form__scroll-wrapper">
       <form className="signup-form" onSubmit={handleSubmit} noValidate>
         {apiError && <div className="signup-form__api-error">{apiError}</div>}
 
@@ -180,6 +183,7 @@ function SignUpForm() {
         </button>
       </form>
     </div>
+    </>
   );
 }
 

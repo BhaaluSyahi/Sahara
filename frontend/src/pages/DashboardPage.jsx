@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import useFadeInOnScroll from '../hooks/useFadeInOnScroll';
 import bgImage from '../assets/wmremove-transformed.png';
 import { getToken } from '../store/useAuthStore';
+import PageLoader from '../components/PageLoader';
 import '../styles/DashboardPage.css';
 
 // ─── Mock Data (commented out — replace with API calls below) ────────────────
@@ -120,6 +121,7 @@ function DashboardPage() {
 
   return (
     <div className="dashboard-page">
+      <PageLoader visible={complaintsLoading || faqsLoading} />
       <div className="dashboard-page__bg" style={{ backgroundImage: `url(${bgImage})` }} />
 
       <div className="dashboard-page__content">

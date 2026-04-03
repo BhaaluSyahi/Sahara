@@ -17,7 +17,7 @@ function LandingFooter() {
         © 2026 Sahara Volunteer Matching. Cultivating impact through connection.
       </p>
       {!isLoggedIn && (
-        <a href="/login" className="landing-footer__cta">+ Register Now</a>
+        <a href="/login?tab=signup" className="landing-footer__cta">+ Register Now</a>
       )}
     </footer>
   );

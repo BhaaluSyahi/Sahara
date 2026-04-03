@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PasswordField from './PasswordField';
 import useAuthStore from '../store/useAuthStore';
+import PageLoader from './PageLoader';
 import '../styles/LoginForm.css';
 
 // ─── API Config ───────────────────────────────────────────────────────────────
@@ -71,7 +72,9 @@ function LoginForm({ onForgotPassword }) {
   };
 
   return (
-    <form className="login-form" onSubmit={handleSubmit} noValidate>
+    <>
+      <PageLoader visible={loading} />
+      <form className="login-form" onSubmit={handleSubmit} noValidate>
       {apiError && <div className="login-form__api-error">{apiError}</div>}
 
       <div className="login-form__field">
@@ -111,6 +114,7 @@ function LoginForm({ onForgotPassword }) {
         {loading ? 'Logging in...' : 'Login to Portal'}
       </button>
     </form>
+    </>
   );
 }
 

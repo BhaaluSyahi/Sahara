@@ -415,3 +415,78 @@ details[open] .faq__question::after {
   .cp-hero__title { font-size: 2rem; }
   .complaints-main { padding: 2rem 1rem; }
 }
+
+/* Skeleton loaders */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.cp-activity__item--skeleton {
+  gap: 0.75rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.skeleton--dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton--line {
+  flex: 1;
+  height: 14px;
+}
+
+.skeleton--faq {
+  height: 40px;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+/* Error state */
+.cp-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #d32f2f;
+}
+
+.cp-error__retry {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #d32f2f;
+  color: #d32f2f;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cp-error__retry:hover {
+  background: #ffebee;
+}
+
+/* Empty state */
+.cp-empty {
+  font-size: 0.875rem;
+  color: #aaa;
+  text-align: center;
+  padding: 1.5rem 0;
+}

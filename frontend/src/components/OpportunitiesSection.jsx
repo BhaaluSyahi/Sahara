@@ -2,16 +2,16 @@ import '../styles/OpportunitiesSection.css';
 
 const opportunities = [
   {
-    img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
+    img: `${process.env.PUBLIC_URL}/Screenshot 2026-04-03 180609.png`,
     tags: [{ label: 'NUTRITION', color: 'green' }, { label: '4 WEEKS', color: 'gray' }],
-    title: 'Urban Harvest Kitchen',
-    desc: 'Help prepare organic, nutrient-rich meals for local school programs using surplus...',
+    title: 'Community Food Drive',
+    desc: 'Help collect and distribute meals to families in need, fighting hunger one drive at a time...',
   },
   {
-    img: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
+    img: `${process.env.PUBLIC_URL}/Screenshot 2026-04-03 175912.png`,
     tags: [{ label: 'EDUCATION', color: 'green' }, { label: 'REMOTE', color: 'gray' }],
     title: 'Digital Literacy Mentor',
-    desc: 'Guide seniors through the essentials of modern connectivity and digital...',
+    desc: 'Teach underprivileged school kids basic computer skills, opening doors to a brighter future...',
   },
   {
     img: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400',

@@ -24,7 +24,7 @@ function HeroSection() {
       <div className="hero__right">
         <div className="hero__img-wrapper">
           <img
-            src="https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600"
+            src={`${process.env.PUBLIC_URL}/Screenshot 2026-04-03 173151.png`}
             alt="Volunteers planting together"
             className="hero__img"
           />

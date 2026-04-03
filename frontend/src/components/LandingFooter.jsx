@@ -1,6 +1,9 @@
+import useAuthStore from '../store/useAuthStore';
 import '../styles/LandingFooter.css';
 
 function LandingFooter() {
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+
   return (
     <footer className="landing-footer">
       <p className="landing-footer__brand">Sahara</p>
@@ -13,7 +16,9 @@ function LandingFooter() {
       <p className="landing-footer__copy">
         © 2026 Sahara Volunteer Matching. Cultivating impact through connection.
       </p>
-      <a href="/register" className="landing-footer__cta">+ Register Now</a>
+      {!isLoggedIn && (
+        <a href="/login" className="landing-footer__cta">+ Register Now</a>
+      )}
     </footer>
   );
 }

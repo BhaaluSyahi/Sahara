@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-function useFadeInOnScroll(threshold = 0.15) {
+function useFadeInOnScroll(threshold = 0.08) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 

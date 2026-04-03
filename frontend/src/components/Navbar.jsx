@@ -1,14 +1,21 @@
+import { useLocation } from 'react-router-dom';
 import '../styles/Navbar.css';
 
 function Navbar() {
+  const { pathname } = useLocation();
+
+  const isActive = (path) =>
+    path === '/' ? pathname === '/' : pathname.startsWith(path);
+
   return (
     <nav className="navbar">
       <div className="navbar__left">
-        <span className="navbar__logo">Sahara</span>
+        <a href="/" className="navbar__logo">Sahara</a>
         <ul className="navbar__links">
-          <li><a href="/" className="navbar__link navbar__link--active">Home</a></li>
-          <li><a href="/complaints" className="navbar__link">My Complaints</a></li>
-          <li><a href="/contact" className="navbar__link">Contact Us</a></li>
+          <li><a href="/" className={`navbar__link${isActive('/') ? ' navbar__link--active' : ''}`}>Home</a></li>
+          <li><a href="/dashboard" className={`navbar__link${isActive('/dashboard') ? ' navbar__link--active' : ''}`}>Dashboard</a></li>
+          <li><a href="/complaints" className={`navbar__link${isActive('/complaints') ? ' navbar__link--active' : ''}`}>My Complaints</a></li>
+          <li><a href="/contact" className={`navbar__link${isActive('/contact') ? ' navbar__link--active' : ''}`}>Contact Us</a></li>
         </ul>
       </div>
       <div className="navbar__right">

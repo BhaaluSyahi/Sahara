@@ -28,7 +28,7 @@ def extract_text_from_pdf(pdf_path, batch_size=3, poppler_path=None):
             for image in images:
                 extracted = pytesseract.image_to_string(image)
                 clean_page = "\n".join([line.strip() for line in extracted.splitlines() if line.strip()])
-                text += clean_page + "\n\n--- Page Break ---\n\n"
+                text += clean_page + "\n\n"
             
             page_number += batch_size
             

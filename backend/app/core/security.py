@@ -91,3 +91,12 @@ async def get_volunteer_user(current_user: dict = Depends(get_current_user)) -> 
             detail="Only volunteers can access this resource",
         )
     return current_user
+
+
+async def get_citizen_user(current_user: dict = Depends(get_current_user)) -> dict:
+    if current_user.get("role") != "citizen":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only citizens can access this resource",
+        )
+    return current_user

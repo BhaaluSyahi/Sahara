@@ -106,6 +106,20 @@ async def delete_request(
     return {"status": "deleted"}
 
 
+@router.get("/my", response_model=list[RequestResponse])
+async def get_my_requests(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all requests issued by the current user"""
+    request_repo = RequestRepository(db)
+
+    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
+    user_id = UUID(current_user["user_id"])
+
+    return await request_repo.list_by_issuer(issuer_type, user_id)
+
+
 @router.post("/{request_id}/join", response_model=ParticipantResponse)
 async def join_request(
     request_id: UUID,

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from typing import Optional
 
 from app.db.base import get_db
 from app.core.security import get_current_user
@@ -108,16 +109,18 @@ async def delete_request(
 
 @router.get("/my", response_model=list[RequestResponse])
 async def get_my_requests(
+    status: Optional[str] = Query(None, description="Filter by status: open, in_progress, done, resolved, closed"),
+    title: Optional[str] = Query(None, description="Search by title (partial match)"),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all requests issued by the current user"""
+    """Get all requests issued by the current user, with optional filters"""
     request_repo = RequestRepository(db)
 
     issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
     user_id = UUID(current_user["user_id"])
 
-    return await request_repo.list_by_issuer(issuer_type, user_id)
+    return await request_repo.list_by_issuer(issuer_type, user_id, status=status, title=title)
 
 
 @router.post("/{request_id}/join", response_model=ParticipantResponse)

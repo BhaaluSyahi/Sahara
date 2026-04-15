@@ -3,6 +3,7 @@ from sqlalchemy import select
 from app.models.entities import Request, RequestParticipant
 from app.models.schemas import RequestCreate, RequestUpdate
 from uuid import UUID
+from typing import Optional
 
 
 class RequestRepository:
@@ -56,14 +57,23 @@ class RequestRepository:
         await self.db.refresh(request)
         return request
     
-    async def list_by_issuer(self, issuer_type: str, issuer_id: UUID) -> list[Request]:
-        result = await self.db.execute(
-            select(Request).where(
-                (Request.issuer_type == issuer_type) & 
-                (Request.issuer_id == issuer_id) &
-                (Request.status != "deleted")
-            )
+    async def list_by_issuer(
+        self,
+        issuer_type: str,
+        issuer_id: UUID,
+        status: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> list[Request]:
+        query = select(Request).where(
+            (Request.issuer_type == issuer_type) &
+            (Request.issuer_id == issuer_id) &
+            (Request.status != "deleted")
         )
+        if status:
+            query = query.where(Request.status == status)
+        if title:
+            query = query.where(Request.title.ilike(f"%{title}%"))
+        result = await self.db.execute(query)
         return result.scalars().all()
     
     async def list_all_open(self) -> list[Request]:

@@ -1,11 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from typing import Optional
 
 from app.db.base import get_db
-from app.core.security import get_current_user
-from app.models.schemas import RequestCreate, RequestUpdate, RequestResponse, ParticipantResponse
+from app.core.security import get_current_user, get_citizen_user
+from app.models.schemas import (
+    RequestCreate, RequestUpdate, RequestResponse, ParticipantResponse,
+    CitizenProfileCreate, CitizenProfileUpdate, CitizenProfileResponse,
+)
 from app.repositories.request_repository import RequestRepository, RequestParticipantRepository
+from app.repositories.citizen_repository import CitizenRepository
 from app.services.ai_service import RequestResearchService
 
 router = APIRouter(prefix="/api/v1/requests", tags=["requests"])
@@ -106,6 +111,22 @@ async def delete_request(
     return {"status": "deleted"}
 
 
+@router.get("/my", response_model=list[RequestResponse])
+async def get_my_requests(
+    status: Optional[str] = Query(None, description="Filter by status: open, in_progress, done, resolved, closed"),
+    title: Optional[str] = Query(None, description="Search by title (partial match)"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all requests issued by the current user, with optional filters"""
+    request_repo = RequestRepository(db)
+
+    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
+    user_id = UUID(current_user["user_id"])
+
+    return await request_repo.list_by_issuer(issuer_type, user_id, status=status, title=title)
+
+
 @router.post("/{request_id}/join", response_model=ParticipantResponse)
 async def join_request(
     request_id: UUID,
@@ -143,8 +164,116 @@ async def get_request_participants(
     return participants
 
 
-async def research_request(request_id: UUID, db: AsyncSession):
-    """Background task to research request using AI agent"""
+# ---------------------------------------------------------------------------
+# Citizen profile endpoints
+# ---------------------------------------------------------------------------
+
+@router.post("/citizen/profile", response_model=CitizenProfileResponse)
+async def create_citizen_profile(
+    data: CitizenProfileCreate,
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a citizen profile (citizen role only)"""
+    citizen_repo = CitizenRepository(db)
+    user_id = UUID(current_user["user_id"])
+    existing = await citizen_repo.get_by_user_id(user_id)
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Profile already exists")
+    return await citizen_repo.create(user_id, data)
+
+
+@router.get("/citizen/profile", response_model=CitizenProfileResponse)
+async def get_citizen_profile(
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the current citizen's profile"""
+    citizen_repo = CitizenRepository(db)
+    profile = await citizen_repo.get_by_user_id(UUID(current_user["user_id"]))
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    return profile
+
+
+@router.put("/citizen/profile", response_model=CitizenProfileResponse)
+async def update_citizen_profile(
+    data: CitizenProfileUpdate,
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the current citizen's profile"""
+    citizen_repo = CitizenRepository(db)
+    updated = await citizen_repo.update(UUID(current_user["user_id"]), data)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    return updated
+
+
+# ---------------------------------------------------------------------------
+# Citizen issue (request) endpoints
+# ---------------------------------------------------------------------------
+
+@router.post("/citizen/issues", response_model=RequestResponse)
+async def citizen_create_issue(
+    request_data: RequestCreate,
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new issue (citizen role only)"""
+    request_repo = RequestRepository(db)
+    user_id = UUID(current_user["user_id"])
+    return await request_repo.create("citizen", user_id, request_data)
+
+
+@router.get("/citizen/issues", response_model=list[RequestResponse])
+async def citizen_list_issues(
+    title: Optional[str] = Query(None, description="Search by title (partial match)"),
+    status: Optional[str] = Query(None, description="Filter by status: pending, in_progress, done"),
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all issues filed by the current citizen, with optional title search and status filter"""
+    request_repo = RequestRepository(db)
+    user_id = UUID(current_user["user_id"])
+    return await request_repo.list_by_issuer("citizen", user_id, status=status, title=title)
+
+
+@router.put("/citizen/issues/{issue_id}", response_model=RequestResponse)
+async def citizen_update_issue(
+    issue_id: UUID,
+    request_data: RequestUpdate,
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update an issue filed by the current citizen"""
+    request_repo = RequestRepository(db)
+    issue = await request_repo.get_by_id(issue_id)
+    if not issue:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
+    if str(issue.issuer_id) != current_user["user_id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your issue")
+    return await request_repo.update(issue_id, request_data)
+
+
+@router.delete("/citizen/issues/{issue_id}")
+async def citizen_delete_issue(
+    issue_id: UUID,
+    current_user: dict = Depends(get_citizen_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete an issue filed by the current citizen"""
+    request_repo = RequestRepository(db)
+    issue = await request_repo.get_by_id(issue_id)
+    if not issue:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
+    if str(issue.issuer_id) != current_user["user_id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your issue")
+    await request_repo.update(issue_id, RequestUpdate(status="deleted"))
+    return {"status": "deleted"}
+
+
+async def research_request(request_id: UUID, db: AsyncSession):    """Background task to research request using AI agent"""
     request_repo = RequestRepository(db)
     
     # Start research

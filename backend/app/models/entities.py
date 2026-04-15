@@ -12,7 +12,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-    role = Column(String, nullable=False)  # employee, volunteer
+    role = Column(String, nullable=False)  # employee, volunteer, citizen
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -33,8 +33,19 @@ class VolunteerProfile(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
-class Organization(Base):
-    __tablename__ = "organizations"
+class CitizenProfile(Base):
+    __tablename__ = "citizen_profiles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Organization(Base):    __tablename__ = "organizations"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
@@ -85,9 +96,9 @@ class Request(Base):
     location_text = Column(String, nullable=True)
     latitude = Column(String, nullable=True)
     longitude = Column(String, nullable=True)
-    issuer_type = Column(String, nullable=False)  # volunteer, organization
+    issuer_type = Column(String, nullable=False)  # volunteer, organization, citizen
     issuer_id = Column(UUID(as_uuid=True), nullable=False)
-    status = Column(String, nullable=False, default="open")  # open, closed, deleted
+    status = Column(String, nullable=False, default="pending")  # pending, in_progress, done, deleted
     progress_percent = Column(Integer, default=0)
     recommendations = Column(JSON, nullable=True)
     infoboard = Column(JSON, nullable=True)

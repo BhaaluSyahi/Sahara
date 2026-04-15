@@ -1,40 +1,72 @@
 import cv2
 import numpy as np
+import pytesseract
 
-def get_boundary(image_path):
+
+def extract_text_from_image(image_path: str) -> str:
+    """
+    Detects text block regions in a newspaper/document image using contour detection,
+    crops each block, runs Tesseract OCR on each, and returns the combined text.
+    """
     image = cv2.imread(image_path)
-    if image is None: return
+    if image is None:
+        raise FileNotFoundError(f"Could not read image: {image_path}")
 
+    # Resize for consistent processing
     image_resized = cv2.resize(image, (500, 600))
     gray = cv2.cvtColor(image_resized, cv2.COLOR_BGR2GRAY)
 
+    # Adaptive threshold to isolate text regions
+    thresh = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV, 11, 5
+    )
 
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 11, 5)
-
-
+    # Dilate horizontally to merge characters into words/lines
     kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 1))
     dilated = cv2.dilate(thresh, kernel_h, iterations=1)
 
+    # Dilate vertically to merge lines into text blocks
     kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 5))
     dilated = cv2.dilate(dilated, kernel_v, iterations=2)
+
+    # Erode slightly to tighten block boundaries
     kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     dilated = cv2.erode(dilated, kernel_erode, iterations=1)
 
-    # cv2.imshow('dilated', dilated)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # for c in contours:
-    #     if cv2.contourArea(c) > 100:
-    #         x, y, w, h = cv2.boundingRect(c)
-    #         cv2.rectangle(image_resized, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    # Sort contours top-to-bottom for natural reading order
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
 
-    cv2.drawContours(image_resized, contours, -1, (0, 255, 0), 3)
+    extracted_text = ""
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < 500:  # Skip noise / tiny blobs
+            continue
 
-    cv2.imshow('Resized Contours', image_resized)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        x, y, w, h = cv2.boundingRect(contour)
 
-get_boundary("sample_image.jpeg")
+        # Skip regions that are too narrow or too short to be text
+        if w < 20 or h < 10:
+            continue
+
+        # Crop the text block from the original resized image
+        # Add small padding to avoid clipping characters at edges
+        pad = 4
+        x1 = max(0, x - pad)
+        y1 = max(0, y - pad)
+        x2 = min(image_resized.shape[1], x + w + pad)
+        y2 = min(image_resized.shape[0], y + h + pad)
+        crop = image_resized[y1:y2, x1:x2]
+
+        # Run Tesseract on the cropped block
+        block_text = pytesseract.image_to_string(crop, config="--psm 6")
+        block_text = block_text.strip()
+        if block_text:
+            extracted_text += block_text + "\n\n"
+
+    if not extracted_text.strip():
+        raise ValueError(f"No text could be extracted from image: {image_path}")
+
+    return extracted_text.strip()

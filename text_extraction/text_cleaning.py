@@ -3,7 +3,6 @@ import re
 
 
 def normalize_data(text):
-    # Preserve paragraph breaks before collapsing single newlines
     text = re.sub(r'\n{2,}', ' <PARA> ', text)
     text = text.replace('\n', ' ')
     text = contractions.fix(text)

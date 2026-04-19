@@ -11,10 +11,16 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # Supabase
-    supabase_url: Optional[str] = None
-    supabase_key: Optional[str] = None
-    supabase_bucket_name: str = "documents"
+    # AWS
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_region: str = "ap-south-1"
+    aws_s3_bucket_name: str
+    # SMTP Email
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 465
+    smtp_sender_email: Optional[str] = None
+    smtp_password: Optional[str] = None
     
     # Agent URLs
     doc_extraction_agent_url: str = "http://localhost:8001/extract"

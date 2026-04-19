@@ -38,6 +38,30 @@ Extract and structure the following information into a clean JSON object. If a f
 - Affected_Demographic: Who is most impacted? (e.g., Commuters, Elderly, Residents of X colony).
 - Actionable_Summary: A "To-Do" for a field officer investigating this report.
 
+json format:
+{
+  "problem_brief": "",
+  "severity": {
+    "score": 0,
+    "reasoning": ""
+  },
+  "location": {
+    "specific_area": "",
+    "city": "",
+    "context_markers": []
+  },
+  "classification": {
+    "primary": "",
+    "secondary": []
+  },
+  "meta": {
+    "authority_responsible": "",
+    "sentiment": "",
+    "affected_group": ""
+  },
+  "field_instructions": ""
+}
+
 Return ONLY a valid JSON object with these fields. No markdown, no explanation, no code fences."""
 
 
@@ -50,7 +74,6 @@ NER TOKENS:
 
 
 def _parse_gemini_response(response_text: str) -> dict:
-    """Robustly strip markdown fences and parse JSON from Gemini response."""
     text = response_text.strip()
 
    
@@ -90,14 +113,7 @@ def call_gemini(raw_text: str, ner_tokens: dict, model=None, retries: int = 3, b
 
 
 def run_pipeline(source: str, poppler_path: str = None) -> dict:
-    """
-    Full pipeline: input -> OCR (if PDF) -> Text Cleaning -> NER -> Gemini -> structured JSON
 
-    Args:
-        source: Path to a PDF file, image file, or a raw text string.
-        poppler_path: Optional path to poppler binaries (needed on some systems for PDF).
-    """
-    # Determine input type
     if os.path.isfile(source):
         ext = os.path.splitext(source)[1].lower()
         if ext == ".pdf":

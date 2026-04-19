@@ -4,39 +4,36 @@ import pytesseract
 
 
 def extract_text_from_image(image_path: str) -> str:
-    """
-    Detects text block regions in a newspaper/document image using contour detection,
-    crops each block, runs Tesseract OCR on each, and returns the combined text.
-    """
+
     image = cv2.imread(image_path)
     if image is None:
         raise FileNotFoundError(f"Could not read image: {image_path}")
 
-    # Resize for consistent processing
+    
     image_resized = cv2.resize(image, (500, 600))
     gray = cv2.cvtColor(image_resized, cv2.COLOR_BGR2GRAY)
 
-    # Adaptive threshold to isolate text regions
+  
     thresh = cv2.adaptiveThreshold(
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV, 11, 5
     )
 
-    # Dilate horizontally to merge characters into words/lines
+  
     kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 1))
     dilated = cv2.dilate(thresh, kernel_h, iterations=1)
 
-    # Dilate vertically to merge lines into text blocks
+ 
     kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 5))
     dilated = cv2.dilate(dilated, kernel_v, iterations=2)
 
-    # Erode slightly to tighten block boundaries
+
     kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     dilated = cv2.erode(dilated, kernel_erode, iterations=1)
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Sort contours top-to-bottom for natural reading order
+   
     contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
 
     extracted_text = ""
@@ -47,12 +44,11 @@ def extract_text_from_image(image_path: str) -> str:
 
         x, y, w, h = cv2.boundingRect(contour)
 
-        # Skip regions that are too narrow or too short to be text
+       
         if w < 20 or h < 10:
             continue
 
-        # Crop the text block from the original resized image
-        # Add small padding to avoid clipping characters at edges
+        
         pad = 4
         x1 = max(0, x - pad)
         y1 = max(0, y - pad)
@@ -60,7 +56,7 @@ def extract_text_from_image(image_path: str) -> str:
         y2 = min(image_resized.shape[0], y + h + pad)
         crop = image_resized[y1:y2, x1:x2]
 
-        # Run Tesseract on the cropped block
+     
         block_text = pytesseract.image_to_string(crop, config="--psm 6")
         block_text = block_text.strip()
         if block_text:

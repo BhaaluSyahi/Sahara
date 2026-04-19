@@ -70,12 +70,10 @@ def detect_category(text):
     for category, keywords in COMPLAINT_CATEGORIES.items():
         scores[category] = sum(1 for kw in keywords if kw in text_lower)
 
-    # Only assign a category if at least one keyword matched
     max_score = max(scores.values())
     if max_score == 0:
         return "general"
 
-    # Return all tied winners, pick the first for primary (stable ordering)
     best_categories = [cat for cat, score in scores.items() if score == max_score]
     return best_categories[0]
 
@@ -99,6 +97,5 @@ def extract_complaint_fields(text: str) -> dict:
         "pin_codes":     extract_pin_codes(text),
         "category":      detect_category(text),
         "severity":      detect_severity(text),
-        # Convert tuples to dicts for clean JSON serialization
         "raw_entities":  [{"text": ent.text, "label": ent.label_} for ent in doc.ents],
     }

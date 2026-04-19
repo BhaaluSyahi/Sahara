@@ -12,6 +12,7 @@ from app.repositories.organization_repository import (
     OrganizationRepository, OrganizationMembershipRepository, OrganizationDocumentRepository
 )
 from app.repositories.volunteer_repository import VolunteerRepository
+from app.services.storage_service import upload_file_to_s3
 
 router = APIRouter(prefix="/api/v1/organizations", tags=["organizations"])
 
@@ -101,10 +102,15 @@ async def upload_organization_document(
         )
     
     uploaded_by = UUID(current_user["user_id"])
-    
-    # Simulate storing document
-    storage_path = f"orgs/{org_id}/documents/{file.filename}"
-    
+
+    # Upload file to S3
+    file_bytes = await file.read()
+    s3_key = f"orgs/{org_id}/documents/{file.filename}"
+    try:
+        storage_path = await upload_file_to_s3(file_bytes, s3_key, content_type=file.content_type or "application/octet-stream")
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
     doc = await doc_repo.create(org_id, uploaded_by, file.filename, storage_path)
     return doc
 

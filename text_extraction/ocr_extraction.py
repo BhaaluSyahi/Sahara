@@ -12,7 +12,6 @@ def extract_text_from_pdf(pdf_path, batch_size=3, poppler_path=None):
     page_number = 1
 
     kwargs = {}
-    # Pass poppler_path on any OS if provided, not just Windows
     if poppler_path:
         kwargs['poppler_path'] = poppler_path
 

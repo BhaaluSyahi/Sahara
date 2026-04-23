@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthTabs from './AuthTabs';
-import LoginForm, { loginWithGoogle } from './LoginForm';
+import LoginForm from './LoginForm';
 import SignUpForm from './SignUpForm';
-import GoogleAuthButton from './GoogleAuthButton';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import useAuthStore from '../store/useAuthStore';
+import authService from '../services/authService';
 import '../styles/AuthCard.css';
 
 function AuthCard() {
   const [activeTab, setActiveTab] = useState('login');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [googleError, setGoogleError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const login = useAuthStore((state) => state.login);
+  const { login } = useAuthStore();
 
   // Open signup tab if ?tab=signup is in the URL
   useEffect(() => {
@@ -22,14 +23,35 @@ function AuthCard() {
     if (params.get('tab') === 'signup') setActiveTab('signup');
   }, [location.search]);
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setGoogleError('');
+  const handleLogin = async (email, password) => {
+    setLoading(true);
+    setError('');
+    
     try {
-      const data = await loginWithGoogle(credentialResponse);
-      login(data.user, data.token);
+      const response = await authService.login(email, password);
+      const userData = authService.getUserFromToken();
+      login(userData, response.access_token);
       navigate('/dashboard');
-    } catch (err) {
-      setGoogleError(err.message);
+    } catch (error) {
+      setError(error.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (email, password, role) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await authService.register(email, password, role);
+      const userData = authService.getUserFromToken();
+      login(userData, response.access_token);
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,29 +79,30 @@ function AuthCard() {
           <h1 className="auth-card__heading">Sahara</h1>
         </div>
 
-        <p className="auth-card__subtitle">Secure access to government services</p>
+        <p className="auth-card__subtitle">Volunteer Matching System</p>
+
+        {error && (
+          <div className="auth-error">
+            {error}
+          </div>
+        )}
 
         <AuthTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         <div key={activeTab} className="auth-card__form-transition">
           {activeTab === 'login' ? (
-            <LoginForm onForgotPassword={() => setIsForgotPasswordOpen(true)} />
+            <LoginForm 
+              onSuccess={handleLogin} 
+              loading={loading}
+              onForgotPassword={() => setIsForgotPasswordOpen(true)} 
+            />
           ) : (
-            <SignUpForm />
+            <SignUpForm 
+              onSuccess={handleRegister} 
+              loading={loading}
+            />
           )}
         </div>
-
-        <div className="auth-card__divider">
-          <hr className="auth-card__divider-line" />
-          <span className="auth-card__divider-text">or</span>
-          <hr className="auth-card__divider-line" />
-        </div>
-
-        <GoogleAuthButton
-          onSuccess={handleGoogleSuccess}
-          onError={() => setGoogleError('Google sign-in failed. Please try again.')}
-        />
-        {googleError && <p className="auth-card__google-error">{googleError}</p>}
 
         <p className="auth-card__legal">
           By using this portal, you agree to our{' '}

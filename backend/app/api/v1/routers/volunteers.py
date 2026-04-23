@@ -23,7 +23,7 @@ async def create_volunteer_profile(
     # Check if profile exists
     existing = await volunteer_repo.get_by_user_id(user_id)
     if existing:
-        profile = await volunteer_repo.update(existing.id, VolunteerProfileUpdate(**profile_data.model_dump()))
+        profile = await volunteer_repo.update(user_id, VolunteerProfileUpdate(**profile_data.model_dump()))
         return profile
     
     profile = await volunteer_repo.create(user_id, profile_data)
@@ -66,5 +66,5 @@ async def update_volunteer_profile(
             detail="Volunteer profile not found"
         )
     
-    updated = await volunteer_repo.update(profile.id, profile_data)
+    updated = await volunteer_repo.update(user_id, profile_data)
     return updated

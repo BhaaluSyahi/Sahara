@@ -122,6 +122,7 @@ class RequestCreate(BaseModel):
     location_text: Optional[str] = None
     latitude: Optional[str] = None
     longitude: Optional[str] = None
+    category: str  # flood, drought, healthcare, education, welfare, livelihood, environment, disaster
 
 
 class RequestUpdate(BaseModel):
@@ -160,6 +161,7 @@ class ParticipantResponse(BaseModel):
     role: str
     credit_percent: int
     joined_at: datetime
+    volunteer_name: Optional[str] = None
 
     class Config:
         from_attributes = True

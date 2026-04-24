@@ -28,7 +28,22 @@ function LoginPage() {
       login(userData, response.access_token);
       navigate(from, { replace: true });
     } catch (error) {
-      setError(error.message || 'Login failed. Please try again.');
+      // Handle different types of errors more gracefully
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Invalid email or password')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Database connection failed')) {
+          errorMessage = 'Service temporarily unavailable. Please try again in a few moments.';
+        } else if (error.message.includes('Login failed')) {
+          errorMessage = 'Login failed. Please check your information and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -50,7 +65,22 @@ function LoginPage() {
         navigate(from, { replace: true });
       }
     } catch (error) {
-      setError(error.message || 'Registration failed. Please try again.');
+      // Handle different types of errors more gracefully
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Email already registered')) {
+          errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+        } else if (error.message.includes('Database connection failed')) {
+          errorMessage = 'Service temporarily unavailable. Please try again in a few moments.';
+        } else if (error.message.includes('Registration failed')) {
+          errorMessage = 'Registration failed. Please check your information and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

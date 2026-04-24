@@ -15,45 +15,86 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 @router.post("/register", response_model=TokenResponse)
 async def register(request: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user (employee or volunteer)"""
-    user_repo = UserRepository(db)
-    
-    # Check if user exists
-    existing = await user_repo.get_by_email(request.email)
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        user_repo = UserRepository(db)
+        
+        # Check if user exists
+        existing = await user_repo.get_by_email(request.email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered. Please use a different email or try logging in."
+            )
+        
+        # Create user
+        user = await user_repo.create(request.email, request.password, request.role)
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": str(user.id), "role": user.role},
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
+        
+        return TokenResponse(access_token=access_token)
     
-    # Create user
-    user = await user_repo.create(request.email, request.password, request.role)
-    
-    # Create access token
-    access_token = create_access_token(
-        data={"sub": str(user.id), "role": user.role},
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
-    )
-    
-    return TokenResponse(access_token=access_token)
+    except HTTPException:
+        # Re-raise HTTP exceptions (like duplicate email)
+        raise
+    except Exception as e:
+        # Handle database connection errors and other unexpected errors
+        error_message = str(e).lower()
+        if "getaddrinfo failed" in error_message or "connection" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database connection failed. Please try again later."
+            )
+        elif "duplicate key" in error_message or "unique constraint" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered. Please use a different email or try logging in."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Registration failed. Please try again later."
+            )
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: UserLoginRequest, db: AsyncSession = Depends(get_db)):
     """Login user"""
-    user_repo = UserRepository(db)
-    
-    # Authenticate user
-    user = await user_repo.authenticate(request.email, request.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+    try:
+        user_repo = UserRepository(db)
+        
+        # Authenticate user
+        user = await user_repo.authenticate(request.email, request.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": str(user.id), "role": user.role},
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
+        
+        return TokenResponse(access_token=access_token)
     
-    # Create access token
-    access_token = create_access_token(
-        data={"sub": str(user.id), "role": user.role},
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
-    )
-    
-    return TokenResponse(access_token=access_token)
+    except HTTPException:
+        # Re-raise HTTP exceptions (like invalid credentials)
+        raise
+    except Exception as e:
+        # Handle database connection errors and other unexpected errors
+        error_message = str(e).lower()
+        if "getaddrinfo failed" in error_message or "connection" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database connection failed. Please try again later."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Login failed. Please try again later."
+            )

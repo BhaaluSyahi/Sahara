@@ -14,6 +14,11 @@ function RequestDetailsPage() {
   const [joining, setJoining] = useState(false);
   const [userRole, setUserRole] = useState('');
   const [isOwner, setIsOwner] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryCategory, setRetryCategory] = useState('');
+  const [showRetryModal, setShowRetryModal] = useState(false);
+  const [canViewParticipants, setCanViewParticipants] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +26,10 @@ function RequestDetailsPage() {
     fetchParticipants();
     checkUserRole();
   }, [requestId]);
+
+  useEffect(() => {
+    checkParticipantAccess();
+  }, [request, userRole, isOwner]);
 
   const fetchRequestDetails = async () => {
     try {
@@ -93,6 +102,28 @@ function RequestDetailsPage() {
     }
   };
 
+  const handleRetryRequest = async () => {
+    if (!retryCategory) {
+      setError('Please select a category for retry');
+      return;
+    }
+
+    setRetrying(true);
+    setError('');
+
+    try {
+      await requestService.retryRequest(requestId, retryCategory);
+      // Refresh request details
+      await fetchRequestDetails();
+      setShowRetryModal(false);
+      setRetryCategory('healthcare');
+    } catch (error) {
+      setError(error.message || 'Failed to retry request');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'open': return 'status-open';
@@ -112,14 +143,58 @@ function RequestDetailsPage() {
     }
   };
 
+  const checkParticipantAccess = async () => {
+    if (!request || !userRole) return;
+    
+    setCheckingAccess(true);
+    try {
+      // If user is the issuer, they can view participants
+      if (isOwner) {
+        setCanViewParticipants(true);
+        return;
+      }
+      
+      // If issuer is an organization, check if user is a member
+      if (request.issuer_type === 'organization') {
+        const token = localStorage.getItem('sahara_token');
+        if (token) {
+          try {
+            const response = await fetch(`/api/v1/organizations/${request.issuer_id}/membership-check`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            const data = await response.json();
+            setCanViewParticipants(data.is_member);
+          } catch (error) {
+            console.error('Error checking organization membership:', error);
+            setCanViewParticipants(false);
+          }
+        }
+      } else {
+        // If issuer is a volunteer and user is not the issuer, they can't view participants
+        setCanViewParticipants(false);
+      }
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return 'Invalid Date';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   if (loading) {
@@ -181,12 +256,6 @@ function RequestDetailsPage() {
             <div className="info-item">
               <strong>Created:</strong> {formatDate(request.created_at)}
             </div>
-            <div className="info-item">
-              <strong>Updated:</strong> {formatDate(request.updated_at)}
-            </div>
-            <div className="info-item">
-              <strong>Issuer Type:</strong> {request.issuer_type}
-            </div>
             {request.progress_percent !== undefined && (
               <div className="info-item">
                 <strong>Progress:</strong> {request.progress_percent}%
@@ -245,19 +314,26 @@ function RequestDetailsPage() {
         <div className="request-participants">
           <h2>Participants ({participants.length})</h2>
           
-          {participants.length === 0 ? (
+          {checkingAccess ? (
+            <p className="loading-participants">Checking access permissions...</p>
+          ) : participants.length === 0 ? (
             <p className="no-participants">No participants yet.</p>
-          ) : (
+          ) : canViewParticipants ? (
             <div className="participants-list">
               {participants.map(participant => (
                 <div key={participant.id} className="participant-card">
                   <div className="participant-info">
                     <h3>{participant.volunteer_name || 'Anonymous Volunteer'}</h3>
                     <p>Role: {participant.role}</p>
-                    <p>Joined: {formatDate(participant.created_at)}</p>
+                    <p>Joined: {formatDate(participant.joined_at)}</p>
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="participants-summary">
+              <p>{participants.length} participant{participants.length !== 1 ? 's' : ''} have joined this request.</p>
+              <p>Contact the request issuer for more details about participants.</p>
             </div>
           )}
         </div>
@@ -287,9 +363,66 @@ function RequestDetailsPage() {
               >
                 Edit Request
               </button>
+              {request.agent_research_status === 'failed' && (
+                <button
+                  onClick={() => setShowRetryModal(true)}
+                  className="btn btn-warning"
+                >
+                  Retry Request
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        {/* Retry Modal */}
+        {showRetryModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Retry Failed Request</h3>
+              <p>Your request failed to process. Please select a new category and try again.</p>
+              
+              <div className="form-group">
+                <label htmlFor="retryCategory">Category *</label>
+                <select
+                  id="retryCategory"
+                  value={retryCategory}
+                  onChange={(e) => setRetryCategory(e.target.value)}
+                  required
+                >
+                  <option value="flood">Flood</option>
+                  <option value="drought">Drought</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="education">Education</option>
+                  <option value="welfare">Welfare</option>
+                  <option value="livelihood">Livelihood</option>
+                  <option value="environment">Environment</option>
+                  <option value="disaster">Disaster</option>
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  onClick={() => {
+                    setShowRetryModal(false);
+                    setRetryCategory('healthcare');
+                  }}
+                  className="btn btn-secondary"
+                  disabled={retrying}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRetryRequest}
+                  className="btn btn-primary"
+                  disabled={retrying}
+                >
+                  {retrying ? 'Retrying...' : 'Retry Request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

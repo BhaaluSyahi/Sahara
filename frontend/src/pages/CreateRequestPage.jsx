@@ -11,7 +11,8 @@ function CreateRequestPage() {
     location_type: 'online',
     location_text: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    category: 'healthcare'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +45,7 @@ function CreateRequestPage() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         location_type: formData.location_type,
+        category: formData.category,
         ...(formData.location_type === 'location' && {
           location_text: formData.location_text.trim(),
           latitude: formData.latitude.trim() || null,
@@ -120,6 +122,27 @@ function CreateRequestPage() {
               maxLength={2000}
             />
             <small>Maximum 2000 characters</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="category">Category *</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="flood">Flood</option>
+              <option value="drought">Drought</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+              <option value="welfare">Welfare</option>
+              <option value="livelihood">Livelihood</option>
+              <option value="environment">Environment</option>
+              <option value="disaster">Disaster</option>
+            </select>
+            <small>Select the category that best describes your request</small>
           </div>
 
           <div className="form-group">

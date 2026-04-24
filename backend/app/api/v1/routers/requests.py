@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import Optional
@@ -32,9 +32,8 @@ async def create_request(
     
     req = await request_repo.create(issuer_type, user_id, request_data)
     
-    # Extract category from request data (for now, use a default or extract from description)
-    # In a real implementation, this would come from the request form or AI classification
-    category = "regional"  # Default category
+    # Extract category from request data
+    category = request_data.category
     
     # Publish to SQS queue
     queue_result = await queue_service.publish_request(
@@ -189,6 +188,74 @@ async def join_request(
     
     participant = await participant_repo.create(request_id, volunteer_profile.user_id, role="participant")
     return participant
+
+
+@router.post("/{request_id}/retry", response_model=RequestResponse)
+async def retry_failed_request(
+    request_id: UUID,
+    retry_data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Retry a failed request with new category"""
+    request_repo = RequestRepository(db)
+    
+    # Get the request
+    req = await request_repo.get_by_id(request_id)
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found"
+        )
+    
+    # Check if user owns the request
+    user_id = UUID(current_user["user_id"])
+    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
+    
+    if req.issuer_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only retry your own requests"
+        )
+    
+    # Check if request is failed
+    if req.agent_research_status != "failed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only failed requests can be retried"
+        )
+    
+    # Extract category from request body
+    category = retry_data.get("category")
+    
+    # Publish to SQS queue with new category
+    queue_result = await queue_service.publish_request(
+        str(req.id), 
+        category, 
+        {
+            "title": req.title,
+            "description": req.description,
+            "location_type": req.location_type,
+            "issuer_type": req.issuer_type,
+            "issuer_id": str(req.issuer_id)
+        }
+    )
+    
+    # Update request with queue status
+    if queue_result["status"] == "success":
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="queued"
+        )
+    else:
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="failed"
+        )
+    
+    return req
 
 
 @router.get("/{request_id}/participants", response_model=list[ParticipantResponse])

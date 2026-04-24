@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models.entities import Request, RequestParticipant
+from app.models.entities import Request, RequestParticipant, VolunteerProfile
 from app.models.schemas import RequestCreate, RequestUpdate
 from uuid import UUID
 from typing import Optional
@@ -106,9 +106,16 @@ class RequestParticipantRepository:
     
     async def get_request_participants(self, request_id: UUID) -> list[RequestParticipant]:
         result = await self.db.execute(
-            select(RequestParticipant).where(RequestParticipant.request_id == request_id)
+            select(RequestParticipant, VolunteerProfile.name)
+            .join(VolunteerProfile, RequestParticipant.volunteer_id == VolunteerProfile.user_id)
+            .where(RequestParticipant.request_id == request_id)
         )
-        return result.scalars().all()
+        participants = []
+        for participant, volunteer_name in result:
+            # Add volunteer_name as an attribute to the participant object
+            participant.volunteer_name = volunteer_name
+            participants.append(participant)
+        return participants
     
     async def update_credit(self, participant_id: UUID, credit_percent: int) -> RequestParticipant | None:
         participant = await self.get_by_id(participant_id)

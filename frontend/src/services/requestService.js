@@ -67,6 +67,15 @@ class RequestService {
     }
   }
 
+  // Retry a failed request
+  async retryRequest(requestId, category) {
+    try {
+      return await api.post(`/requests/${requestId}/retry`, { category });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Get request participants
   async getRequestParticipants(requestId) {
     try {

@@ -8,7 +8,7 @@ from uuid import UUID
 class UserRegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    role: str  # employee, volunteer, citizen
+    role: str  # employee, volunteer
 
 
 class UserLoginRequest(BaseModel):
@@ -112,29 +112,6 @@ class MembershipResponse(BaseModel):
         from_attributes = True
 
 
-# Citizen Schemas
-class CitizenProfileCreate(BaseModel):
-    name: str
-    phone: Optional[str] = None
-    address: Optional[str] = None
-
-
-class CitizenProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-
-
-class CitizenProfileResponse(BaseModel):
-    id: UUID
-    user_id: UUID
-    name: str
-    phone: Optional[str]
-    address: Optional[str]
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Request Schemas
@@ -145,6 +122,7 @@ class RequestCreate(BaseModel):
     location_text: Optional[str] = None
     latitude: Optional[str] = None
     longitude: Optional[str] = None
+    category: str  # flood, drought, healthcare, education, welfare, livelihood, environment, disaster
 
 
 class RequestUpdate(BaseModel):
@@ -183,6 +161,7 @@ class ParticipantResponse(BaseModel):
     role: str
     credit_percent: int
     joined_at: datetime
+    volunteer_name: Optional[str] = None
 
     class Config:
         from_attributes = True

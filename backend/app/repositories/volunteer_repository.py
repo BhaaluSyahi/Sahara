@@ -19,20 +19,14 @@ class VolunteerRepository:
         await self.db.refresh(db_profile)
         return db_profile
     
-    async def get_by_id(self, profile_id: UUID) -> VolunteerProfile | None:
-        result = await self.db.execute(
-            select(VolunteerProfile).where(VolunteerProfile.id == profile_id)
-        )
-        return result.scalars().first()
-    
     async def get_by_user_id(self, user_id: UUID) -> VolunteerProfile | None:
         result = await self.db.execute(
             select(VolunteerProfile).where(VolunteerProfile.user_id == user_id)
         )
         return result.scalars().first()
     
-    async def update(self, profile_id: UUID, data: VolunteerProfileUpdate) -> VolunteerProfile | None:
-        profile = await self.get_by_id(profile_id)
+    async def update(self, user_id: UUID, data: VolunteerProfileUpdate) -> VolunteerProfile | None:
+        profile = await self.get_by_user_id(user_id)
         if not profile:
             return None
         

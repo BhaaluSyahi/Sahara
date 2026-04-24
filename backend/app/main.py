@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.routers import auth, volunteers, organizations, requests, ratings
+from app.api.v1.routers import auth, volunteers, organizations, requests, ratings, realtime
 
 # Create FastAPI app
 app = FastAPI(
@@ -25,6 +25,7 @@ app.include_router(volunteers.router)
 app.include_router(organizations.router)
 app.include_router(requests.router)
 app.include_router(ratings.router)
+app.include_router(realtime.router)
 
 
 @app.get("/")

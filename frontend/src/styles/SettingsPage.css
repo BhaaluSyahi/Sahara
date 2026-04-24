@@ -1,0 +1,311 @@
+.settings-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.settings-header h1 {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.user-email {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.user-role {
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.settings-content {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.settings-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.tab {
+  flex: 1;
+  padding: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  color: #666;
+  border-bottom: 3px solid transparent;
+}
+
+.tab:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.tab.active {
+  color: #4CAF50;
+  border-bottom-color: #4CAF50;
+  background: white;
+}
+
+.settings-panel {
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.account-settings h2,
+.notification-settings h2,
+.privacy-settings h2,
+.about-settings h2 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.setting-group {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.setting-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.setting-group h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.125rem;
+}
+
+.setting-group p {
+  margin: 0 0 1rem 0;
+  color: #666;
+}
+
+.change-btn,
+.delete-account-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.change-btn {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.change-btn:hover {
+  background: #e0e0e0;
+}
+
+.setting-group.danger h3 {
+  color: #f44336;
+}
+
+.delete-account-btn {
+  background: #f44336;
+  color: white;
+}
+
+.delete-account-btn:hover {
+  background: #d32f2f;
+}
+
+.notification-settings,
+.privacy-settings {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.setting-item {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.setting-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.setting-label span {
+  font-weight: 500;
+  color: #333;
+}
+
+.setting-item p {
+  margin: 0;
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.role-display {
+  padding: 0.5rem 1rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.about-settings {
+  display: grid;
+  gap: 2rem;
+}
+
+.about-section h3 {
+  margin: 0 0 0.75rem 0;
+  color: #333;
+  font-size: 1.125rem;
+}
+
+.about-section p {
+  margin: 0 0 0.5rem 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.about-section ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #666;
+}
+
+.about-section li {
+  margin-bottom: 0.25rem;
+}
+
+.legal-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.legal-links a {
+  color: #4CAF50;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.legal-links a:hover {
+  color: #45a049;
+  text-decoration: underline;
+}
+
+.settings-actions {
+  padding: 1.5rem 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  gap: 1rem;
+}
+
+.save-btn,
+.logout-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  flex: 1;
+}
+
+.save-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #45a049;
+}
+
+.logout-btn {
+  background: #f44336;
+  color: white;
+}
+
+.logout-btn:hover {
+  background: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 1rem;
+  }
+  
+  .settings-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .user-info {
+    align-items: center;
+  }
+  
+  .settings-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab {
+    flex: 1 1 50%;
+    min-width: 120px;
+  }
+  
+  .settings-panel {
+    padding: 1.5rem;
+  }
+  
+  .legal-links {
+    flex-direction: column;
+  }
+  
+  .settings-actions {
+    flex-direction: column;
+  }
+}

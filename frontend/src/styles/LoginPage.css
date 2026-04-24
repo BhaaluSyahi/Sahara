@@ -1,59 +1,67 @@
 /* LoginPage styles */
 
 .login-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
-  overflow: hidden;
-}
-
-.login-page__body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
-  flex-direction: row;
-  flex: 1;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
-/* Desktop (>=1025px) */
+.login-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Auth error styling */
+.auth-error {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  color: #f44336;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Volunteer info section */
+.volunteer-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.volunteer-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.volunteer-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Remove old layout structure */
+.login-page__body,
 .login-page__body > .hero-panel {
-  width: 50%;
-  flex-shrink: 0;
+  display: none;
 }
 
-.login-page__body > .auth-card-panel {
-  width: 50%;
-  flex-shrink: 0;
-}
-
-/* Tablet (601–1024px) */
-@media (max-width: 1024px) {
-  .login-page__body {
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .login-page__body > .hero-panel {
-    width: 100%;
-    height: 40vh;
-    flex-shrink: 0;
-  }
-
-  .login-page__body > .auth-card-panel {
-    width: 100%;
-    flex: 1;
-  }
-}
-
-/* Mobile (<=600px) */
-@media (max-width: 600px) {
-  .login-page__body > .hero-panel {
-    display: none;
-  }
-
-  .login-page__body > .auth-card-panel {
-    width: 100%;
-    min-height: 100%;
+/* Tablet and Mobile */
+@media (max-width: 768px) {
+  .login-page {
     padding: 1rem;
+  }
+  
+  .login-container {
+    max-width: 100%;
   }
 }

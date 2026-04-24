@@ -37,6 +37,15 @@ async def create_organization(
     return org
 
 
+@router.get("/", response_model=list[OrganizationResponse])
+async def get_organizations(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all organizations (public endpoint)"""
+    org_repo = OrganizationRepository(db)
+    return await org_repo.list_all()
+
+
 @router.get("/{org_id}", response_model=OrganizationResponse)
 async def get_organization(
     org_id: UUID,

@@ -1,27 +1,34 @@
 import { create } from 'zustand';
-
-// ─── Token helpers ────────────────────────────────────────────────────────────
-// TODO: swap localStorage for a more secure httpOnly cookie approach
-// once your backend supports it. For now localStorage is fine for dev.
-const TOKEN_KEY = 'sahara_token';
-
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
-export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+import authService from '../services/authService';
 
 // ─── Auth Store ───────────────────────────────────────────────────────────────
 const useAuthStore = create((set) => ({
-  isLoggedIn: !!getToken(), // rehydrate from localStorage on page load
-  user: null,
+  isLoggedIn: authService.isAuthenticated(), // rehydrate from token on page load
+  user: authService.getUserFromToken(), // get user info from token
 
   login: (userData, token) => {
-    if (token) setToken(token);
+    // Token is already set by authService
     set({ isLoggedIn: true, user: userData });
   },
 
   logout: () => {
-    clearToken();
+    authService.logout();
     set({ isLoggedIn: false, user: null });
+  },
+
+  // Update user data (useful for profile updates)
+  updateUser: (userData) => {
+    set({ user: userData });
+  },
+
+  // Initialize auth state from token
+  initializeAuth: () => {
+    const isAuthenticated = authService.isAuthenticated();
+    const user = authService.getUserFromToken();
+    set({ 
+      isLoggedIn: isAuthenticated, 
+      user: user 
+    });
   },
 }));
 

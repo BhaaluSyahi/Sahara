@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import Optional
 
 from app.db.base import get_db
-from app.core.security import get_current_user, get_citizen_user
+from app.core.security import get_current_user
 from app.models.schemas import (
     RequestCreate, RequestUpdate, RequestResponse, ParticipantResponse,
-    CitizenProfileCreate, CitizenProfileUpdate, CitizenProfileResponse,
 )
 from app.repositories.request_repository import RequestRepository, RequestParticipantRepository
-from app.repositories.citizen_repository import CitizenRepository
+from app.repositories.volunteer_repository import VolunteerRepository
 from app.services.ai_service import RequestResearchService
+from app.services.queue_service import queue_service
 
 router = APIRouter(prefix="/api/v1/requests", tags=["requests"])
 
@@ -19,7 +19,6 @@ router = APIRouter(prefix="/api/v1/requests", tags=["requests"])
 @router.post("/", response_model=RequestResponse)
 async def create_request(
     request_data: RequestCreate,
-    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -33,10 +32,53 @@ async def create_request(
     
     req = await request_repo.create(issuer_type, user_id, request_data)
     
-    # Start async research in background
-    background_tasks.add_task(research_request, req.id, db)
+    # Extract category from request data
+    category = request_data.category
+    
+    # Publish to SQS queue
+    queue_result = await queue_service.publish_request(
+        str(req.id), 
+        category, 
+        {
+            "title": req.title,
+            "description": req.description,
+            "location_type": req.location_type,
+            "issuer_type": issuer_type,
+            "issuer_id": str(user_id)
+        }
+    )
+    
+    # Update request with queue status
+    if queue_result["status"] == "success":
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="queued"
+        )
+    else:
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="failed"
+        )
     
     return req
+
+
+@router.get("/my", response_model=list[RequestResponse])
+async def get_my_requests(
+    status: Optional[str] = Query(None, description="Filter by status: open, closed, deleted"),
+    title: Optional[str] = Query(None, description="Search by title (partial match)"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all requests issued by the current user, with optional filters"""
+    request_repo = RequestRepository(db)
+
+    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
+    user_id = UUID(current_user["user_id"])
+
+    return await request_repo.list_by_issuer(issuer_type, user_id, status=status, title=title)
 
 
 @router.get("/{request_id}", response_model=RequestResponse)
@@ -111,22 +153,6 @@ async def delete_request(
     return {"status": "deleted"}
 
 
-@router.get("/my", response_model=list[RequestResponse])
-async def get_my_requests(
-    status: Optional[str] = Query(None, description="Filter by status: open, in_progress, done, resolved, closed"),
-    title: Optional[str] = Query(None, description="Search by title (partial match)"),
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get all requests issued by the current user, with optional filters"""
-    request_repo = RequestRepository(db)
-
-    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
-    user_id = UUID(current_user["user_id"])
-
-    return await request_repo.list_by_issuer(issuer_type, user_id, status=status, title=title)
-
-
 @router.post("/{request_id}/join", response_model=ParticipantResponse)
 async def join_request(
     request_id: UUID,
@@ -136,20 +162,100 @@ async def join_request(
     """Join a request (volunteer only)"""
     participant_repo = RequestParticipantRepository(db)
     request_repo = RequestRepository(db)
+    volunteer_repo = VolunteerRepository(db)
     
     req = await request_repo.get_by_id(request_id)
-    if not req or req.status != "open":
+    if not req:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Request not found or not open"
+            detail="Request not found"
         )
     
-    # For now, assume current_user has a volunteer profile
-    # In production, retrieve volunteer_id from DB
-    volunteer_id = UUID("00000000-0000-0000-0000-000000000001")  # Placeholder
+    if req.status not in ["open"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request is not open for joining"
+        )
     
-    participant = await participant_repo.create(request_id, volunteer_id, role="participant")
+    # Get volunteer profile for current user
+    user_id = UUID(current_user["user_id"])
+    volunteer_profile = await volunteer_repo.get_by_user_id(user_id)
+    if not volunteer_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Volunteer profile required. Please create a volunteer profile first."
+        )
+    
+    participant = await participant_repo.create(request_id, volunteer_profile.user_id, role="participant")
     return participant
+
+
+@router.post("/{request_id}/retry", response_model=RequestResponse)
+async def retry_failed_request(
+    request_id: UUID,
+    retry_data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Retry a failed request with new category"""
+    request_repo = RequestRepository(db)
+    
+    # Get the request
+    req = await request_repo.get_by_id(request_id)
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found"
+        )
+    
+    # Check if user owns the request
+    user_id = UUID(current_user["user_id"])
+    issuer_type = "volunteer" if current_user.get("role") == "volunteer" else "organization"
+    
+    if req.issuer_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only retry your own requests"
+        )
+    
+    # Check if request is failed
+    if req.agent_research_status != "failed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only failed requests can be retried"
+        )
+    
+    # Extract category from request body
+    category = retry_data.get("category")
+    
+    # Publish to SQS queue with new category
+    queue_result = await queue_service.publish_request(
+        str(req.id), 
+        category, 
+        {
+            "title": req.title,
+            "description": req.description,
+            "location_type": req.location_type,
+            "issuer_type": req.issuer_type,
+            "issuer_id": str(req.issuer_id)
+        }
+    )
+    
+    # Update request with queue status
+    if queue_result["status"] == "success":
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="queued"
+        )
+    else:
+        await request_repo.update_progress(
+            req.id, 
+            0, 
+            agent_status="failed"
+        )
+    
+    return req
 
 
 @router.get("/{request_id}/participants", response_model=list[ParticipantResponse])
@@ -164,116 +270,10 @@ async def get_request_participants(
     return participants
 
 
-# ---------------------------------------------------------------------------
-# Citizen profile endpoints
-# ---------------------------------------------------------------------------
-
-@router.post("/citizen/profile", response_model=CitizenProfileResponse)
-async def create_citizen_profile(
-    data: CitizenProfileCreate,
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Create a citizen profile (citizen role only)"""
-    citizen_repo = CitizenRepository(db)
-    user_id = UUID(current_user["user_id"])
-    existing = await citizen_repo.get_by_user_id(user_id)
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Profile already exists")
-    return await citizen_repo.create(user_id, data)
 
 
-@router.get("/citizen/profile", response_model=CitizenProfileResponse)
-async def get_citizen_profile(
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get the current citizen's profile"""
-    citizen_repo = CitizenRepository(db)
-    profile = await citizen_repo.get_by_user_id(UUID(current_user["user_id"]))
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return profile
-
-
-@router.put("/citizen/profile", response_model=CitizenProfileResponse)
-async def update_citizen_profile(
-    data: CitizenProfileUpdate,
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Update the current citizen's profile"""
-    citizen_repo = CitizenRepository(db)
-    updated = await citizen_repo.update(UUID(current_user["user_id"]), data)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return updated
-
-
-# ---------------------------------------------------------------------------
-# Citizen issue (request) endpoints
-# ---------------------------------------------------------------------------
-
-@router.post("/citizen/issues", response_model=RequestResponse)
-async def citizen_create_issue(
-    request_data: RequestCreate,
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Create a new issue (citizen role only)"""
-    request_repo = RequestRepository(db)
-    user_id = UUID(current_user["user_id"])
-    return await request_repo.create("citizen", user_id, request_data)
-
-
-@router.get("/citizen/issues", response_model=list[RequestResponse])
-async def citizen_list_issues(
-    title: Optional[str] = Query(None, description="Search by title (partial match)"),
-    status: Optional[str] = Query(None, description="Filter by status: pending, in_progress, done"),
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """List all issues filed by the current citizen, with optional title search and status filter"""
-    request_repo = RequestRepository(db)
-    user_id = UUID(current_user["user_id"])
-    return await request_repo.list_by_issuer("citizen", user_id, status=status, title=title)
-
-
-@router.put("/citizen/issues/{issue_id}", response_model=RequestResponse)
-async def citizen_update_issue(
-    issue_id: UUID,
-    request_data: RequestUpdate,
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Update an issue filed by the current citizen"""
-    request_repo = RequestRepository(db)
-    issue = await request_repo.get_by_id(issue_id)
-    if not issue:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
-    if str(issue.issuer_id) != current_user["user_id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your issue")
-    return await request_repo.update(issue_id, request_data)
-
-
-@router.delete("/citizen/issues/{issue_id}")
-async def citizen_delete_issue(
-    issue_id: UUID,
-    current_user: dict = Depends(get_citizen_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Delete an issue filed by the current citizen"""
-    request_repo = RequestRepository(db)
-    issue = await request_repo.get_by_id(issue_id)
-    if not issue:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
-    if str(issue.issuer_id) != current_user["user_id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your issue")
-    await request_repo.update(issue_id, RequestUpdate(status="deleted"))
-    return {"status": "deleted"}
-
-
-async def research_request(request_id: UUID, db: AsyncSession):    """Background task to research request using AI agent"""
+async def research_request(request_id: UUID, db: AsyncSession):
+    """Background task to research request using AI agent"""
     request_repo = RequestRepository(db)
     
     # Start research

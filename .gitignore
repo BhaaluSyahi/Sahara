@@ -36,3 +36,9 @@ Thumbs.db
 # Misc
 .pnp
 .pnp.js
+*.pdm-build
+
+# More
+*venv
+*.venv
+*node_modules
